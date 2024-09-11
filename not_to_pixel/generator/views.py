@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
-from .models import User, Pictures  # Импортируем модели
+from .models import User, Pictures
 
 class CreateUserAPIView(APIView):
     def post(self, request):
@@ -20,7 +20,7 @@ class UpdateLastRequestAPIView(APIView):
     def post(self, request, telegram_id):
         try:
             user = User.objects.get(telegram_id=telegram_id)
-            user.last_request = timezone.now()  # Обновляем время последнего запроса
+            user.last_request = timezone.now()  #Обновляю время последнего запроса
             user.save()
             return Response({"message": "Last request time updated"}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
@@ -34,7 +34,7 @@ class CreatePictureAPIView(APIView):
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        data = request.data.get('data')  # Получаем JSON данные
+        data = request.data.get('data')  #Получаею жсон данные
         if not data:
             return Response({"error": "Data field is required"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -46,3 +46,23 @@ class CreatePictureAPIView(APIView):
         }, status=status.HTTP_201_CREATED)
     
 
+class ListUserPicturesAPIView(APIView):
+    def get(self, request, telegram_id):
+        try:
+            user = User.objects.get(telegram_id=telegram_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Получаем все картинки пользователя
+        pictures = Pictures.objects.filter(user=user)
+        pictures_data = [
+            {
+                "picture_id": picture.id,
+                "data": picture.data,
+            } for picture in pictures
+        ]
+
+        return Response({
+            "user": user.telegram_id,
+            "pictures": pictures_data
+        }, status=status.HTTP_200_OK)
